@@ -34,8 +34,9 @@ class Arch(object):
                 self.vex_archinfo['endness'] = _pyvex.vex_endness_from_string('VexEndnessBE')
             self.memory_endness = 'Iend_BE'
             self.register_endness = 'Iend_BE'
-            self.cs_mode -= _capstone.CS_MODE_LITTLE_ENDIAN
-            self.cs_mode += _capstone.CS_MODE_BIG_ENDIAN
+            if self.name != "S7XX":
+                self.cs_mode -= _capstone.CS_MODE_LITTLE_ENDIAN
+                self.cs_mode += _capstone.CS_MODE_BIG_ENDIAN
             if _unicorn:
                 self.uc_mode -= _unicorn.UC_MODE_LITTLE_ENDIAN
                 self.uc_mode += _unicorn.UC_MODE_BIG_ENDIAN
@@ -334,8 +335,16 @@ def arch_from_id(ident, endness='', bits=''):
 
 
 def reverse_ends(string):
-    ise = 'I'*(len(string)/4)
-    return _struct.pack('>' + ise, *_struct.unpack('<' + ise, string))
+    # fix if length of string is 0 or 2
+    if len(string) == 1:
+        return string
+    elif len(string) == 2:
+        return _struct.pack('>H', *_struct.unpack('<H', string))
+    elif len(string) == 3:
+        return string[2] + string[1] + string[0]
+    else:
+        ise = 'I'*(len(string)/4)
+        return _struct.pack('>' + ise, *_struct.unpack('<' + ise, string))
 
 # pylint: disable=unused-import
 from .arch_amd64    import ArchAMD64
@@ -347,6 +356,8 @@ from .arch_ppc64    import ArchPPC64
 from .arch_mips32   import ArchMIPS32
 from .arch_mips64   import ArchMIPS64
 from .archerror     import ArchError
+# support mc7, edit by xybsoft
+from .arch_s7xx     import ArchS7XX
 
 all_arches = [
     ArchAMD64(), ArchX86(),
@@ -355,5 +366,7 @@ all_arches = [
     ArchPPC32('Iend_LE'), ArchPPC32('Iend_BE'),
     ArchPPC64('Iend_LE'), ArchPPC64('Iend_BE'),
     ArchMIPS32('Iend_LE'), ArchMIPS32('Iend_BE'),
-    ArchMIPS64('Iend_LE'), ArchMIPS64('Iend_BE')
+    ArchMIPS64('Iend_LE'), ArchMIPS64('Iend_BE'),
+    # support mc7, edit by xybsoft
+    ArchS7XX()
 ]
